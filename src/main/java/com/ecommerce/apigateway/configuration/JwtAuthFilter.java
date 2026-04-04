@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
+import com.ecommerce.apigateway.dto.RouteRoleRule;
 import com.ecommerce.apigateway.service.JwtService;
 
 import reactor.core.publisher.Mono;
@@ -39,6 +40,18 @@ public class JwtAuthFilter implements GlobalFilter, Ordered{
 		}
 		
 		String token = authHeader.substring(7);
+		String role = jwtService.extractRole(token);
+		String method = exchange.getRequest().getMethod().name();
+		String urlPath = exchange.getRequest().getURI().getPath();
+		
+		for (RouteRoleRule rule : RouteValidator.rules) {
+		    if (urlPath.startsWith(rule.getPath()) && method.equals(rule.getMethod())) {
+		        if (!rule.getRole().equals(role)) {
+		            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+		            return exchange.getResponse().setComplete();
+		        }
+		    }
+		}
 
         try {
             String email = jwtService.extractUsername(token);
