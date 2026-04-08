@@ -9,23 +9,34 @@ spring:
           uri: http://localhost:8081
           predicates:
             - Path=/api/auth/**
+          order: 1
 
         - id: product-service
           uri: http://localhost:8082
           predicates:
-            - Path=/products/**
+            - Path=/api/products/**
+          order: 2
 
         - id: order-service
           uri: http://localhost:8083
           predicates:
             - Path=/orders/**
+          order: 3
 
         - id: notification-service
           uri: http://localhost:8087
           predicates:
             - Path=/notifications/**
+          order: 4
 
         - id: payment-service
           uri: http://localhost:8086
           predicates:
             - Path=/payments/**
+          order: 5
+
+        - id: frontend-service
+          uri: http://localhost:8090
+          predicates:
+            - Path=/**
+          order: 100

@@ -27,43 +27,59 @@ public class JwtAuthFilter implements GlobalFilter, Ordered{
 
 	@Override
 	public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-		System.out.println("JWT FILTER HIT");
-		String path = exchange.getRequest().getURI().getPath();
-		if(path.startsWith("/api/auth")) {
-			return chain.filter(exchange);
-		}
-		
-		String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-		if(authHeader == null || !authHeader.startsWith("Bearer ")) {
-			exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-			return exchange.getResponse().setComplete();
-		}
-		
-		String token = authHeader.substring(7);
-		String role = jwtService.extractRole(token);
-		String method = exchange.getRequest().getMethod().name();
-		String urlPath = exchange.getRequest().getURI().getPath();
-		
-		for (RouteRoleRule rule : RouteValidator.rules) {
-		    if (urlPath.startsWith(rule.getPath()) && method.equals(rule.getMethod())) {
-		        if (!rule.getRole().equals(role)) {
-		            exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
-		            return exchange.getResponse().setComplete();
-		        }
-		    }
-		}
 
-        try {
-            String email = jwtService.extractUsername(token);
-            if (email == null) {
-                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                return exchange.getResponse().setComplete();
-            }
-        } catch (Exception e) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
-        }
-        return chain.filter(exchange);
+	    String path = exchange.getRequest().getURI().getPath();
+
+	    System.out.println("PATH: " + path);
+
+	    // ✅ COMPLETELY SKIP SECURITY FOR AUTH + PUBLIC
+	    if (
+	        path.contains("/auth") ||   // 🔥 covers /api/auth, /auth, etc
+	        path.equals("/login") ||
+	        path.equals("/register") ||
+	        path.equals("/home") ||
+	        path.equals("/products") ||
+	        path.startsWith("/css") ||
+	        path.startsWith("/images") ||
+	        path.startsWith("/orders/cart") ||
+	        path.startsWith("/cart") ||
+	        path.startsWith("/js")
+	    ) {
+	        return chain.filter(exchange); // 🔥 EXIT EARLY
+	    }
+
+	    // 🔐 JWT CHECK
+	    String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+
+	    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+	        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+	        return exchange.getResponse().setComplete();
+	    }
+
+	    String token = authHeader.substring(7);
+
+	    String role;
+	    try {
+	        role = jwtService.extractRole(token);
+	    } catch (Exception e) {
+	        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+	        return exchange.getResponse().setComplete();
+	    }
+
+	    // 🔐 ROLE VALIDATION
+	    String method = exchange.getRequest().getMethod().name();
+	    String urlPath = exchange.getRequest().getURI().getPath();
+
+	    for (RouteRoleRule rule : RouteValidator.rules) {
+	        if (urlPath.startsWith(rule.getPath()) && method.equals(rule.getMethod())) {
+	            if (!rule.getRole().equals(role)) {
+	                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+	                return exchange.getResponse().setComplete();
+	            }
+	        }
+	    }
+
+	    return chain.filter(exchange);
 	}
 	
 }
