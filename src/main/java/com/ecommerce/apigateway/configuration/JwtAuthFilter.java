@@ -39,10 +39,14 @@ public class JwtAuthFilter implements GlobalFilter, Ordered{
 	        path.equals("/register") ||
 	        path.equals("/home") ||
 	        path.equals("/products") ||
+	        path.startsWith("/products") ||
 	        path.startsWith("/css") ||
 	        path.startsWith("/images") ||
 	        path.startsWith("/orders/cart") ||
 	        path.startsWith("/cart") ||
+	        path.startsWith("/oauth-success") ||
+	        path.startsWith("/orders") ||
+	        path.startsWith("/oauth2") ||
 	        path.startsWith("/js")
 	    ) {
 	        return chain.filter(exchange); // 🔥 EXIT EARLY
